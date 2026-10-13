@@ -5,11 +5,13 @@
     "icon": "▣",
     "color": "#73758c",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 0
+    "sort": 0,
+    "relations": {
+      "belongs": {
+        "targets": [],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "project",
@@ -17,10 +19,15 @@
     "icon": "▤",
     "color": "#7185a0",
     "properties": {},
-    "parent_allowed": [
-      "domain"
-    ],
-    "sort": 1
+    "sort": 1,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain"
+        ],
+        "multiple": true
+      }
+    }
   },
   {
     "id": "canvas",
@@ -28,11 +35,16 @@
     "icon": "▢",
     "color": "#719697",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 2
+    "sort": 2,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "group",
@@ -40,11 +52,16 @@
     "icon": "⬚",
     "color": "#93908d",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 3
+    "sort": 3,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "action",
@@ -67,11 +84,16 @@
         "label": "截止时间"
       }
     },
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 4
+    "sort": 4,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "artifact",
@@ -79,11 +101,16 @@
     "icon": "◆",
     "color": "#96809d",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 5
+    "sort": 5,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "distill",
@@ -91,11 +118,16 @@
     "icon": "●",
     "color": "#719582",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 6
+    "sort": 6,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "material",
@@ -103,11 +135,16 @@
     "icon": "○",
     "color": "#83909c",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 7
+    "sort": 7,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "thought",
@@ -115,11 +152,16 @@
     "icon": "◌",
     "color": "#b39b64",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 8
+    "sort": 8,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "self",
@@ -141,11 +183,16 @@
         "required": true
       }
     },
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 9
+    "sort": 9,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   },
   {
     "id": "ai_output",
@@ -153,10 +200,15 @@
     "icon": "✳",
     "color": "#aaa6a2",
     "properties": {},
-    "parent_allowed": [
-      "domain",
-      "project"
-    ],
-    "sort": 10
+    "sort": 10,
+    "relations": {
+      "belongs": {
+        "targets": [
+          "domain",
+          "project"
+        ],
+        "multiple": false
+      }
+    }
   }
 ]

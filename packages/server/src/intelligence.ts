@@ -42,8 +42,21 @@ export async function related(w: Workspace, repo: Repository, id: string) {
 export function scopeObjects(w: Workspace, scope: any): KnowledgeObject[] { let items = searchable(w).filter(o => o.kind !== 'ai_output'); if (scope?.object_id) {
     const ids = new Set([scope.object_id, ...w.relations.filter(r => !r.deleted_at && (r.from_id === scope.object_id || r.to_id === scope.object_id)).flatMap(r => [r.from_id, r.to_id])]);
     items = items.filter(o => ids.has(o.id));
-} if (scope?.parent_id)
-    items = items.filter(o => o.parent_id === scope.parent_id); if (scope?.canvas_id) {
+} if (scope?.belongs) {
+    // 容器范围是传递的：领域 → 项目 → 项目里的东西。归属边从子指向父，所以这里反向走。
+    const ids = new Set<string>(), queue = [scope.belongs];
+    while (queue.length) {
+        const id = queue.shift()!;
+        if (ids.has(id))
+            continue;
+        ids.add(id);
+        for (const r of w.relations)
+            if (r.type === 'belongs' && !r.deleted_at && r.to_id === id)
+                queue.push(r.from_id);
+    }
+    ids.delete(scope.belongs);
+    items = items.filter(o => ids.has(o.id));
+} if (scope?.canvas_id) {
     const ids = new Set(w.placements.filter(p => p.canvas_id === scope.canvas_id && !p.deleted_at).map(p => p.object_id));
     items = items.filter(o => ids.has(o.id));
 } if (scope?.since)

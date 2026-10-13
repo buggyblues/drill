@@ -29,7 +29,7 @@ export const sortedBlocks = (blocks) => [...blocks].filter(b => !b.deleted_at).s
 export const bodyText = (blocks) => sortedBlocks(blocks).map(b => b.text).join('\n\n');
 export function makeObject(title, user_id, data = {}) {
     const now = Date.now();
-    return { id: uid(), user_id, kind: null, form: /^https?:\/\/\S+$/.test(title.trim()) ? 'link' : 'text', title, body: '', body_blocks: { blocks: [] }, parent_id: null, series: null, tags_cached: [], status: null, due_at: null, sort_key: null, supersedes_id: null, applies_to: [], ephemeral: false, asset_id: null, source_id: null, source_ref: null, source_version: null, extra: {}, captured_at: now, confirmed_at: null, valid_until: null, rev: 0, created_at: 0, updated_at: now, deleted_at: null, ...data };
+    return { id: uid(), user_id, kind: null, form: /^https?:\/\/\S+$/.test(title.trim()) ? 'link' : 'text', title, body: '', body_blocks: { blocks: [] }, series: null, tags_cached: [], status: null, due_at: null, sort_key: null, supersedes_id: null, applies_to: [], ephemeral: false, asset_id: null, source_id: null, source_ref: null, source_version: null, extra: {}, captured_at: now, confirmed_at: null, valid_until: null, rev: 0, created_at: 0, updated_at: now, deleted_at: null, ...data };
 }
 export function emptyWorkspace(user_id, kinds) { return { user: { id: user_id, timezone: 'Asia/Shanghai', created_at: Date.now(), settings: {} }, objects: [], kinds, relations: [], placements: [], tags: [], assets: [], sources: [], proposals: [], versions: [], conflicts: [], changes: [], clocks: {}, mutations: [], devices: {}, nextSeq: 0 }; }
 export function explicitMarkup(text) {

@@ -213,7 +213,8 @@ export function createDrillServer(opts: ServerOptions) {
                     let next = w;
                     if (b.status !== 'rejected') {
                         const o = getObject(w, p.object_id), v = b.status === 'accepted' ? p.ai_value : b.value;
-                        const changes = p.field === 'tags' ? (Array.isArray(v) ? v : []).map((tag: string) => newChange(o.id, 'tag', { tag }, o.rev)) : [newChange(o.id, p.field, v, o.rev)];
+                        // 归属的落地形态是一条 belongs 边，不是对象上的字段。
+                        const changes = p.field === 'tags' ? (Array.isArray(v) ? v : []).map((tag: string) => newChange(o.id, 'tag', { tag }, o.rev)) : p.field === 'belongs' ? [newChange(o.id, 'relation', { to_id: v, type: 'belongs' }, o.rev)] : [newChange(o.id, p.field, v, o.rev)];
                         next = pushBatch(w, changes, 'proposal-decision').workspace;
                     }
                     const decision = next.proposals.find(x => x.id === p.id)!;
@@ -227,10 +228,10 @@ export function createDrillServer(opts: ServerOptions) {
             if (path === '/ai/distill' && method === 'POST') {
                 const w = await opts.repo.read(user), o = getObject(w, b.object_id);
                 const tags = [...new Set(w.tags.filter(t => !t.deleted_at).map(t => t.tag))];
-                const output = await modelJSON('提议字段，不替用户作决定。返回 {"proposals":[{"field":"kind|parent_id|tags|status|applies_to","value":...}]}。只从传入类型、归属和已有标签中选择；外部资料不可变沉淀；模糊想法不能变行动；没有把握返回空数组。', { object: { id: o.id, title: o.title, body: o.body.slice(0, 12000), kind: o.kind }, kinds: w.kinds, parents: w.objects.filter(x => ['domain', 'project'].includes(x.kind ?? '')).map(x => ({ id: x.id, title: x.title })), existing_tags: tags });
+                const output = await modelJSON('提议字段，不替用户作决定。返回 {"proposals":[{"field":"kind|belongs|tags|status|applies_to","value":...}]}。只从传入类型、归属和已有标签中选择；belongs 的 value 是对象ID；外部资料不可变沉淀；模糊想法不能变行动；没有把握返回空数组。', { object: { id: o.id, title: o.title, body: o.body.slice(0, 12000), kind: o.kind }, kinds: w.kinds, parents: w.objects.filter(x => ['domain', 'project'].includes(x.kind ?? '')).map(x => ({ id: x.id, title: x.title })), existing_tags: tags });
                 const rows = Array.isArray(output.proposals) ? output.proposals : [];
                 const session = uid();
-                const p = rows.filter((p: any) => ['kind', 'parent_id', 'tags', 'status', 'applies_to'].includes(p.field)).filter((p: any) => p.field !== 'tags' || (Array.isArray(p.value) && p.value.every((t: string) => tags.includes(t)))).filter((p: any) => p.field !== 'kind' || w.kinds.some(k => k.id === p.value)).slice(0, 5).map((p: any) => ({ id: uid(), session_id: session, object_id: o.id, field: p.field, ai_value: p.value, final_value: null, status: 'pending' as const, decided_at: null, user_id: user }));
+                const p = rows.filter((p: any) => ['kind', 'belongs', 'tags', 'status', 'applies_to'].includes(p.field)).filter((p: any) => p.field !== 'belongs' || w.objects.some(o => o.id === p.value)).filter((p: any) => p.field !== 'tags' || (Array.isArray(p.value) && p.value.every((t: string) => tags.includes(t)))).filter((p: any) => p.field !== 'kind' || w.kinds.some(k => k.id === p.value)).slice(0, 5).map((p: any) => ({ id: uid(), session_id: session, object_id: o.id, field: p.field, ai_value: p.value, final_value: null, status: 'pending' as const, decided_at: null, user_id: user }));
                 await opts.repo.transaction(user, w => { w.proposals.push(...p); return { workspace: w, result: true }; });
                 return send(res, { proposals: p });
             }
@@ -321,9 +322,14 @@ export function createDrillServer(opts: ServerOptions) {
             const w = await opts.repo.read(user);
             if (path === '/objects') {
                 let items = searchable(w);
-                for (const f of ['kind', 'parent_id', 'status'])
+                for (const f of ['kind', 'status'])
                     if (u.searchParams.has(f))
                         items = items.filter(o => (o as any)[f] === u.searchParams.get(f));
+                // 归属是边，不是字段：?belongs=<id> 返回直接挂在它下面的对象。
+                if (u.searchParams.has('belongs')) {
+                    const container = u.searchParams.get('belongs')!;
+                    items = items.filter(o => w.relations.some(r => r.from_id === o.id && r.type === 'belongs' && r.to_id === container && !r.deleted_at));
+                }
                 const since = Number(u.searchParams.get('since') ?? 0);
                 items = items.filter(o => o.captured_at >= since);
                 const offset = Math.max(0, Number(u.searchParams.get('offset')) || 0), limit = Math.min(500, Number(u.searchParams.get('limit')) || 100);

@@ -4,7 +4,7 @@ import { Canvas } from './Canvas.js';
 import { request, loadSnapshot, commit, isDesktop, uploadFile } from './api.js';
 import { makeObject, captureText, uid, inWindow, keyBetween, sortedBlocks, inferForm } from '../../core/src/helpers.js';
 const statusLabel = { todo: '待做', doing: '在做', blocked: '阻塞', done: '完成' };
-const labels = { kind: '类型', parent_id: '归属', tags: '标签', status: '状态', applies_to: '适用范围', series: '系列', due_at: '截止时间' };
+const labels = { kind: '类型', belongs: '归属', tags: '标签', status: '状态', applies_to: '适用范围', series: '系列', due_at: '截止时间' };
 const pageTitles = { recent: '新增', actions: '行动', memory: '个人记忆', insight: '洞察', map: '认知地图', walk: '随机漫步', timeline: '时间轴', canvases: '所有画布', settings: '偏好与连接' };
 const descriptions = { recent: '先放下。想清楚了，再赋予意义。', actions: '让模糊的想法，变成无歧义的下一步。', memory: '关于自己的判断，也值得保留来路。', insight: '不是更快地得到答案，而是更深地看见问题。', map: '看见那些你反复攀登的山。', walk: '沿着关联走一会儿，偶尔去远一点的地方。', timeline: '回到当时，而不是上传的那一刻。', canvases: '已有一些想法之后，再把它们放到一起。' };
 function dateLabel(t, full = false) { return new Intl.DateTimeFormat('zh-CN', full ? { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' } : { month: '2-digit', day: '2-digit' }).format(t); }
@@ -78,6 +78,71 @@ export class App extends React.Component {
     run = (fn) => { void fn().catch(this.fail); };
     fail = (e) => { this.setState({ loading: false, reading: false, searchBusy: false }); this.toast(e?.message ?? String(e)); };
     toast = (message) => { clearTimeout(this.toastTimer); this.setState({ toast: message }); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 6000); };
+    relCache = null;
+    relationsIndex = () => {
+        const snap = this.state.snapshot;
+        const empty = { out: new Map(), inc: new Map() };
+        if (!snap)
+            return empty;
+        const cached = this.relCache;
+        if (cached && cached.snap === snap)
+            return cached;
+        const out = new Map(), inc = new Map();
+        const push = (m, k, v) => {
+            const list = m.get(k);
+            if (list)
+                list.push(v);
+            else
+                m.set(k, [v]);
+        };
+        for (const r of snap.relations) {
+            if (r.deleted_at)
+                continue;
+            push(out, r.from_id, r);
+            push(inc, r.to_id, r);
+        }
+        this.relCache = { snap, out, inc };
+        return { out, inc };
+    };
+    /** 归属边从子指向父：「我归属谁」在出边里，「谁挂在我下面」在入边里。 */
+    belongsParents = (id) => (this.relationsIndex().out.get(id) ?? []).filter(r => r.type === 'belongs').map(r => r.to_id);
+    belongsChildren = (id) => (this.relationsIndex().inc.get(id) ?? []).filter(r => r.type === 'belongs').map(r => r.from_id);
+    /** 容器范围是传递的：领域 → 项目 → 项目里的东西。 */
+    belongsUnder = (scope) => {
+        const found = new Set(), queue = [scope];
+        while (queue.length) {
+            const id = queue.shift();
+            if (found.has(id))
+                continue;
+            found.add(id);
+            for (const child of this.belongsChildren(id))
+                queue.push(child);
+        }
+        found.delete(scope);
+        return found;
+    };
+    childrenOf = (id, kind) => this.belongsChildren(id).map(x => this.object(x)).filter((o) => !!o && !o.deleted_at && (!kind || o.kind === kind));
+    /** 归属是边，不是字段：改归属 = 删掉旧边 + 建一条新边。 */
+    setBelongs = async (o, targetId) => {
+        const current = this.belongsParents(o.id);
+        if (targetId && current.length === 1 && current[0] === targetId)
+            return;
+        const changes = current.map(id => this.changes(o, 'relation', { to_id: id, type: 'belongs', deleted_at: Date.now() }));
+        if (targetId)
+            changes.push(this.changes(o, 'relation', { to_id: targetId, type: 'belongs' }));
+        if (changes.length) {
+            await commit(changes);
+            await this.refresh(false);
+        }
+    };
+    /** 新建衍生对象（推翻、沉淀）时把归属一起带过去，因为归属不再是对象上的字段。 */
+    inheritBelongs = async (fromId, toId) => {
+        const parents = this.belongsParents(fromId), o = this.object(toId);
+        if (!parents.length || !o)
+            return;
+        await commit(parents.map(p => this.changes(o, 'relation', { to_id: p, type: 'belongs' })));
+        await this.refresh(false);
+    };
     objects = () => this.state.snapshot?.objects ?? [];
     kinds = () => this.state.snapshot?.kinds ?? [];
     object = (id) => this.objects().find(o => o.id === id);
@@ -177,6 +242,7 @@ export class App extends React.Component {
     };
     filtered = () => {
         const s = this.state;
+        const under = s.view === 'domain' && s.scope ? this.belongsUnder(s.scope) : null;
         return this.objects().filter(o => !o.deleted_at && !o.ephemeral).filter(o => {
             if (s.view === 'actions')
                 return o.kind === 'action';
@@ -185,7 +251,7 @@ export class App extends React.Component {
             if (s.view === 'canvases')
                 return o.form === 'canvas';
             if (s.view === 'domain')
-                return o.parent_id === s.scope || o.parent_id && this.object(o.parent_id)?.parent_id === s.scope;
+                return !!under && under.has(o.id);
             if (s.view === 'recent')
                 return !['domain', 'project', 'group'].includes(o.kind ?? '');
             return true;
@@ -300,7 +366,7 @@ export class App extends React.Component {
         else
             await this.save(o, 'kind', kind);
     };
-    askAI = async (objectId) => { this.setState({ reading: true, insight: null }); const scope = objectId ? { object_id: objectId } : this.state.insightScope === 'week' ? { since: Date.now() - 7 * 86400000 } : this.state.insightScope.startsWith('canvas:') ? { canvas_id: this.state.insightScope.slice(7) } : { parent_id: this.state.insightScope }; const insight = await request('/insight', 'POST', { scope }); this.setState({ insight, reading: false }); await this.refresh(false); };
+    askAI = async (objectId) => { this.setState({ reading: true, insight: null }); const scope = objectId ? { object_id: objectId } : this.state.insightScope === 'week' ? { since: Date.now() - 7 * 86400000 } : this.state.insightScope.startsWith('canvas:') ? { canvas_id: this.state.insightScope.slice(7) } : { belongs: this.state.insightScope }; const insight = await request('/insight', 'POST', { scope }); this.setState({ insight, reading: false }); await this.refresh(false); };
     distill = async () => {
         const o = this.selected();
         if (!o)
@@ -401,7 +467,7 @@ export class App extends React.Component {
                         React.createElement("button", { className: 'nav-item ' + (s.scope === o.id ? 'selected' : ''), title: o.title, onClick: () => this.navigate('domain', o.id) },
                             React.createElement(Icon, { name: "folder" }),
                             React.createElement("span", null, o.title)),
-                        s.scope === o.id && this.objects().filter(p => p.parent_id === o.id && p.kind === 'project' && !p.deleted_at).map(p => React.createElement("button", { key: p.id, className: "nav-item subitem", onClick: () => this.navigate('domain', p.id) },
+                        s.scope === o.id && this.childrenOf(o.id, 'project').map(p => React.createElement("button", { key: p.id, className: "nav-item subitem", onClick: () => this.navigate('domain', p.id) },
                             React.createElement(Icon, { name: "chevron", size: 14 }),
                             React.createElement("span", null, p.title))))),
                     s.left && React.createElement("button", { className: "quiet-add", onClick: () => this.run(async () => {
@@ -479,7 +545,7 @@ export class App extends React.Component {
                 list.filter(o => (o.status ?? column.options?.[0]) === value).map(o => React.createElement("button", { key: o.id, draggable: true, onDragStart: e => e.dataTransfer.setData('drill/object', o.id), className: 'board-card ' + (s.selected === o.id ? 'selected' : ''), onClick: () => this.select(o.id) },
                     React.createElement("span", { className: "kind-dot", style: { background: this.kind(o.kind)?.color } }),
                     React.createElement("strong", null, o.title),
-                    o.parent_id && React.createElement("small", null, this.object(o.parent_id)?.title))))));
+                    this.belongsParents(o.id)[0] && React.createElement("small", null, this.object(this.belongsParents(o.id)[0])?.title))))));
         if (!list.length)
             return React.createElement("div", { className: "empty-state" },
                 React.createElement(Icon, { name: s.view === 'recent' ? 'recent' : 'folder', size: 28 }),
@@ -691,7 +757,7 @@ export class App extends React.Component {
             React.createElement("div", { className: "property-row" },
                 React.createElement(Icon, { name: "folder", size: 14 }),
                 React.createElement("label", null, "\u5F52\u5C5E"),
-                React.createElement("select", { "aria-label": "\u5BF9\u8C61\u5F52\u5C5E", value: o.parent_id ?? '', onChange: e => this.run(() => this.save(o, 'parent_id', e.target.value || null)) },
+                React.createElement("select", { "aria-label": "\u5BF9\u8C61\u5F52\u5C5E", value: this.belongsParents(o.id)[0] ?? '', onChange: e => this.run(() => this.setBelongs(o, e.target.value || null)) },
                     React.createElement("option", { value: "" }, "\u65E0\u5F52\u5C5E"),
                     this.objects().filter(p => p.id !== o.id && !p.deleted_at && ['domain', 'project'].includes(p.kind ?? '')).map(p => React.createElement("option", { key: p.id, value: p.id }, p.title)))),
             React.createElement("div", { className: "property-row" },
@@ -773,7 +839,7 @@ export class App extends React.Component {
                 React.createElement("span", { className: "eyebrow" },
                     "AI \u5EFA\u8BAE \u00B7 ",
                     labels[p.field] ?? p.field),
-                React.createElement("strong", null, p.field === 'kind' ? this.kind(p.ai_value)?.label : p.field === 'parent_id' ? this.object(p.ai_value)?.title : Array.isArray(p.ai_value) ? p.ai_value.join(' · ') : statusLabel[p.ai_value] ?? String(p.ai_value)),
+                React.createElement("strong", null, p.field === 'kind' ? this.kind(p.ai_value)?.label : p.field === 'belongs' ? this.object(p.ai_value)?.title : Array.isArray(p.ai_value) ? p.ai_value.join(' · ') : statusLabel[p.ai_value] ?? String(p.ai_value)),
                 React.createElement("div", { className: "button-row" },
                     React.createElement("button", { className: "primary", onClick: () => this.run(async () => { await request('/proposals/decide', 'POST', { id: p.id, status: 'accepted' }); await this.refresh(false); }) }, "\u91C7\u7EB3"),
                     React.createElement("button", { onClick: () => this.run(async () => {
@@ -800,7 +866,7 @@ export class App extends React.Component {
                         JSON.stringify(p.final_value))))),
             React.createElement("p", { className: "metadata" }, "\u5EFA\u8BAE\u4E0E\u51B3\u5B9A\u5206\u522B\u7559\u75D5\u3002\u8FD9\u91CC\u4E0D\u8BA1\u7B97\u865A\u5047\u7684\u201C\u601D\u8003\u5360\u6BD4\u201D\u3002"));
     }
-    renderRelations(o) { const s = this.state; const active = s.snapshot.relations.filter((r) => !r.deleted_at); const out = active.filter((r) => r.from_id === o.id), incoming = active.filter((r) => r.to_id === o.id); const edge = (r, direction) => { const id = direction === 'out' ? r.to_id : r.from_id; return React.createElement("button", { key: [r.from_id, r.to_id, r.source_field, r.source_block_id].join('-'), className: "context-item", draggable: true, onDragStart: e => e.dataTransfer.setData('drill/object', id), onClick: () => this.select(id) },
+    renderRelations(o) { const s = this.state; const active = s.snapshot.relations.filter((r) => !r.deleted_at); const out = active.filter((r) => r.from_id === o.id && r.type !== 'belongs'), incoming = active.filter((r) => r.to_id === o.id && r.type !== 'belongs'); const edge = (r, direction) => { const id = direction === 'out' ? r.to_id : r.from_id; return React.createElement("button", { key: [r.from_id, r.to_id, r.source_field, r.source_block_id].join('-'), className: "context-item", draggable: true, onDragStart: e => e.dataTransfer.setData('drill/object', id), onClick: () => this.select(id) },
         React.createElement("span", null, this.object(id)?.title ?? '对象已不可见'),
         r.source_block_id && React.createElement("small", { onClick: e => { e.stopPropagation(); this.select(r.from_id, 'read'); setTimeout(() => document.getElementById('block-' + r.source_block_id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100); } }, "\u56DE\u5230\u539F\u6BB5\u843D \u2197"),
         React.createElement(Icon, { name: "arrow", size: 14 })); }; return React.createElement("div", null,
@@ -881,8 +947,9 @@ export class App extends React.Component {
                                     const title = prompt('现在，你的看法是什么？');
                                     if (!title?.trim())
                                         return;
-                                    const next = makeObject(title.trim(), s.snapshot.user.id, { kind: 'self', parent_id: o.parent_id, applies_to: o.applies_to, supersedes_id: o.id });
+                                    const next = makeObject(title.trim(), s.snapshot.user.id, { kind: 'self', applies_to: o.applies_to, supersedes_id: o.id });
                                     await this.create(next);
+                                    await this.inheritBelongs(o.id, next.id);
                                     this.select(next.id);
                                 }) }, "\u6211\u6539\u4E3B\u610F\u4E86")))),
                 React.createElement("footer", { className: "object-meta" },
@@ -1048,9 +1115,10 @@ export class App extends React.Component {
                         const title = prompt('用自己的话，重写一条理解。');
                         if (!title?.trim())
                             return;
-                        const n = makeObject(title.trim(), s.snapshot.user.id, { kind: 'distill', parent_id: o.parent_id });
+                        const n = makeObject(title.trim(), s.snapshot.user.id, { kind: 'distill' });
                         await this.create(n);
-                        await this.save(this.object(n.id), 'relation', { to_id: o.id }, false);
+                        await this.inheritBelongs(o.id, n.id);
+                        await this.save(this.object(n.id), 'relation', { to_id: o.id, type: 'cite' }, false);
                         this.select(n.id);
                         this.setState({ modal: null });
                     }) },

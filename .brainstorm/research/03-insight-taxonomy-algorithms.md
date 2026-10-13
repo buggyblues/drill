@@ -10,7 +10,7 @@
 
 任务描述里的数据模型与仓库实际 schema 有出入。以下以 `infra/sql/001_schema.sql` 为准，因为**这直接决定哪些洞察"现在就能算"**：
 
-来源：[infra/sql/001_schema.sql](infra/sql/001_schema.sql)、[infra/sql/000_extensions.sql](infra/sql/000_extensions.sql)、[infra/sql/002_kinds.sql](infra/sql/002_kinds.sql)
+来源：[infra/sql/001_schema.sql](infra/sql/001_schema.sql)、[infra/sql/000_extensions.sql](infra/sql/000_extensions.sql)、[infra/sql/003_kinds.sql](infra/sql/003_kinds.sql)
 
 ### 0.1 已经存在、但任务描述没提到的关键字段
 
@@ -22,7 +22,7 @@
 | `objects.status` / `due_at` | `objects` | `action` 类的 todo/doing/blocked/done 与截止时间 → **行动闭环率纯 SQL 可得** |
 | `objects.series` | `objects` | 序列/连载关系，时间模式的天然分组 |
 | `objects.confirmed_at` | `objects` | 用户确认时刻，与 `captured_at` 的差 = 消化延迟 |
-| `objects.search_vector tsvector` | `objects` | 全文检索列，`004_migrate` 里已经准备好了 |
+| `objects.search_vector tsvector` | `objects` | 全文检索列，`002_migrate` 里已经准备好了 |
 | `objects.ephemeral` | `objects` | 临时对象，所有洞察都应排除 |
 | `embeddings.content_hash` | `embeddings` | 内容哈希，**增量重算的判定依据**（hash 没变就不用重嵌入、不用重算该对象的本地洞察） |
 | `embeddings.chunk_id` | `embeddings` | 已支持分块。当前 `related()` 只用整篇向量，chunk 级能力被闲置 |
@@ -313,7 +313,7 @@ SELECT root, count(DISTINCT node) AS component_size FROM walk GROUP BY root;
 
 **判定：【纯确定性】**
 
-这是整个清单里**最纯粹的 SQL 问题**（官方 kind 定义里 `action` 就带 `status` 枚举 `["todo","doing","blocked","done"]` 和 `due_at`，见 [002_kinds.sql](infra/sql/002_kinds.sql)）。
+这是整个清单里**最纯粹的 SQL 问题**（官方 kind 定义里 `action` 就带 `status` 枚举 `["todo","doing","blocked","done"]` 和 `due_at`，见 [003_kinds.sql](infra/sql/003_kinds.sql)）。
 
 ```sql
 SELECT id, title, status, due_at, captured_at,
@@ -1161,7 +1161,7 @@ CREATE INDEX ON objects(user_id, valid_until) WHERE valid_until IS NOT NULL AND 
 **本项目内引用**
 - [infra/sql/001_schema.sql](infra/sql/001_schema.sql) — 表结构
 - [infra/sql/000_extensions.sql](infra/sql/000_extensions.sql) — pg_trgm + vector 扩展
-- [infra/sql/002_kinds.sql](infra/sql/002_kinds.sql) — kind 定义（action 的 status/due_at、self 的 applies_to）
+- [infra/sql/003_kinds.sql](infra/sql/003_kinds.sql) — kind 定义（action 的 status/due_at、self 的 applies_to）
 - [packages/server/src/intelligence.ts](packages/server/src/intelligence.ts) — lexicalScore / cosine / related / clusterVectors / contentHash / modelJSON
 - [packages/server/src/repository.ts:169-180](packages/server/src/repository.ts#L169-L180) — 向量全量加载
 - [packages/server/src/http.ts:237-266](packages/server/src/http.ts#L237-L266) — /insight、/search/reindex

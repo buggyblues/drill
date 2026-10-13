@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "../tokens/generated.css";
+@import "./components.css";
+@theme inline {
+  --color-canvas: var(--rc-color-canvas);
+  --color-surface: var(--rc-color-surface);
+  --color-raised: var(--rc-color-raised);
+  --color-ink: var(--rc-color-text);
+  --color-muted: var(--rc-color-muted);
+  --color-line: var(--rc-color-border);
+  --color-accent: var(--rc-color-accent);
+  --color-success: var(--rc-color-success);
+  --color-danger: var(--rc-color-danger);
+  --font-sans: var(--rc-font-ui);
+  --radius-control: var(--rc-radius-sm);
+  --radius-panel: var(--rc-radius-lg);
+}

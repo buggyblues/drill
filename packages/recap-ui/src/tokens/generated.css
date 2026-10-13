@@ -1,0 +1,108 @@
+/* Generated from tokens/*.tokens.json. Do not edit. */
+:root {
+  --rc-space-1: 4px;
+  --rc-space-2: 8px;
+  --rc-space-3: 12px;
+  --rc-space-4: 16px;
+  --rc-space-5: 20px;
+  --rc-space-6: 24px;
+  --rc-space-8: 32px;
+  --rc-space-10: 40px;
+  --rc-space-12: 48px;
+  --rc-space-16: 64px;
+  --rc-radius-sm: 6px;
+  --rc-radius-md: 10px;
+  --rc-radius-lg: 14px;
+  --rc-radius-xl: 18px;
+  --rc-radius-pill: 999px;
+  --rc-font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --rc-font-mono: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --rc-size-xs: 11px;
+  --rc-size-sm: 12px;
+  --rc-size-body: 14px;
+  --rc-size-md: 16px;
+  --rc-size-lg: 20px;
+  --rc-size-xl: 28px;
+  --rc-size-display: 40px;
+  --rc-size-text-10: 10px;
+  --rc-size-text-13: 13px;
+  --rc-size-text-15: 15px;
+  --rc-size-text-17: 17px;
+  --rc-size-text-18: 18px;
+  --rc-size-text-22: 22px;
+  --rc-size-text-23: 23px;
+  --rc-size-text-24: 24px;
+  --rc-size-text-25: 25px;
+  --rc-size-text-26: 26px;
+  --rc-size-text-30: 30px;
+  --rc-motion-fast: 120ms;
+  --rc-motion-normal: 180ms;
+  --rc-motion-slow: 240ms;
+  --rc-control: 36px;
+  --rc-sidebar-width: 232px;
+  --rc-overlay-z: 50;
+}
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  --rc-color-canvas: rgb(12 12 14 / 1);
+  --rc-color-sidebar: rgb(12 12 14 / 1);
+  --rc-color-surface: rgb(20 20 23 / 1);
+  --rc-color-raised: rgb(25 25 29 / 1);
+  --rc-color-overlay: rgb(25 25 29 / 1);
+  --rc-color-hover: rgb(32 32 37 / 1);
+  --rc-color-selected: rgb(39 39 46 / 1);
+  --rc-color-border: rgb(51 51 60 / 1);
+  --rc-color-border-subtle: rgb(39 39 46 / 1);
+  --rc-color-border-strong: rgb(133 133 143 / 1);
+  --rc-color-text: rgb(246 246 247 / 1);
+  --rc-color-muted: rgb(165 165 175 / 1);
+  --rc-color-subtle: rgb(165 165 175 / 1);
+  --rc-color-inverse: rgb(12 12 14 / 1);
+  --rc-color-primary: rgb(235 235 237 / 1);
+  --rc-color-primary-hover: rgb(255 255 255 / 1);
+  --rc-color-focus: rgb(184 199 255 / 1);
+  --rc-color-accent: rgb(170 183 241 / 1);
+  --rc-color-success: rgb(155 206 176 / 1);
+  --rc-color-warning: rgb(219 193 154 / 1);
+  --rc-color-danger: rgb(246 164 168 / 1);
+  --rc-color-project: rgb(155 206 176 / 1);
+  --rc-color-person: rgb(219 193 154 / 1);
+  --rc-color-note: rgb(170 183 241 / 1);
+  --rc-color-book: rgb(198 175 226 / 1);
+  --rc-color-image: rgb(232 173 185 / 1);
+  --rc-color-audio: rgb(232 173 185 / 1);
+  --rc-color-tag: rgb(198 175 226 / 1);
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --rc-color-canvas: rgb(246 246 247 / 1);
+  --rc-color-sidebar: rgb(246 246 247 / 1);
+  --rc-color-surface: rgb(255 255 255 / 1);
+  --rc-color-raised: rgb(255 255 255 / 1);
+  --rc-color-overlay: rgb(255 255 255 / 1);
+  --rc-color-hover: rgb(235 235 237 / 1);
+  --rc-color-selected: rgb(235 235 237 / 1);
+  --rc-color-border: rgb(211 211 215 / 1);
+  --rc-color-border-subtle: rgb(235 235 237 / 1);
+  --rc-color-border-strong: rgb(105 105 115 / 1);
+  --rc-color-text: rgb(16 16 18 / 1);
+  --rc-color-muted: rgb(105 105 115 / 1);
+  --rc-color-subtle: rgb(105 105 115 / 1);
+  --rc-color-inverse: rgb(255 255 255 / 1);
+  --rc-color-primary: rgb(25 25 29 / 1);
+  --rc-color-primary-hover: rgb(69 69 79 / 1);
+  --rc-color-focus: rgb(52 75 186 / 1);
+  --rc-color-accent: rgb(64 84 160 / 1);
+  --rc-color-success: rgb(38 100 69 / 1);
+  --rc-color-warning: rgb(121 85 34 / 1);
+  --rc-color-danger: rgb(170 40 56 / 1);
+  --rc-color-project: rgb(38 100 69 / 1);
+  --rc-color-person: rgb(121 85 34 / 1);
+  --rc-color-note: rgb(64 84 160 / 1);
+  --rc-color-book: rgb(116 83 152 / 1);
+  --rc-color-image: rgb(139 53 76 / 1);
+  --rc-color-audio: rgb(139 53 76 / 1);
+  --rc-color-tag: rgb(116 83 152 / 1);
+}
+[data-density="compact"] { --rc-control: 30px; }
+@media(pointer: coarse) { :root, [data-density] { --rc-control: 44px; } }

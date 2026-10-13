@@ -1,14 +1,71 @@
 /** The sole conflict-resolution implementation. Never imported by any client. */
-import type { Workspace, KnowledgeObject, Change, Clock, Block, Placement, Relation } from '../../core/src/types.ts';
+import type { Workspace, KnowledgeObject, Change, Clock, Block, Placement, Relation, Kind, RelationRule, RelationType } from '../../core/src/types.ts';
 import { makeObject, uid, bodyText, explicitMarkup } from '../../core/src/helpers.ts';
 export class DomainError extends Error {
     status: number;
     constructor(message: string, status = 422) { super(message); this.status = status; }
 }
-const scalar = new Set(['title', 'body', 'kind', 'parent_id', 'series', 'status', 'due_at', 'sort_key', 'applies_to', 'confirmed_at', 'valid_until', 'extra', 'ephemeral']);
+const scalar = new Set(['title', 'body', 'kind', 'series', 'status', 'due_at', 'sort_key', 'applies_to', 'confirmed_at', 'valid_until', 'extra', 'ephemeral']);
 const comparable = (a: Clock, b?: Clock) => !b || a.ts > b.ts || (a.ts === b.ts && a.device >= b.device);
 const eq = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
 const live = (o: KnowledgeObject) => !o.deleted_at;
+/** 未提炼的内容也能有归属，所以没有 kind 时用这个默认；kind 自己声明了就听声明的。 */
+const DEFAULT_BELONGS: RelationRule = { targets: ['domain', 'project'], multiple: false };
+export const belongsRule = (kind?: Kind | null): RelationRule => kind?.relations?.belongs ?? DEFAULT_BELONGS;
+/** 一个对象的归属边（子 → 父）。归属是关系表里的一条边，不是对象上的字段。 */
+export const belongsEdges = (w: Workspace, id: string): Relation[] => w.relations.filter(r => r.from_id === id && r.type === 'belongs' && !r.deleted_at);
+/** 归属从 target 出发能不能走回 o。能就是环。 */
+function assertNoBelongsCycle(w: Workspace, o: KnowledgeObject, target: KnowledgeObject) {
+    const seen = new Set<string>();
+    const queue = [target.id];
+    while (queue.length) {
+        const id = queue.shift()!;
+        if (seen.has(id))
+            continue;
+        if (id === o.id)
+            throw new DomainError('归属不能形成循环');
+        seen.add(id);
+        for (const e of belongsEdges(w, id))
+            queue.push(e.to_id);
+    }
+}
+/** 新建一条归属边之前：目标类型、能不能有多个、会不会成环。 */
+function assertBelongs(w: Workspace, o: KnowledgeObject, target: KnowledgeObject) {
+    if (target.id === o.id)
+        throw new DomainError('不能归属自己');
+    const kind = o.kind ? w.kinds.find(k => k.id === o.kind) : null;
+    const rule = belongsRule(kind);
+    if (!rule.targets.length)
+        throw new DomainError('这个类型不能有归属');
+    if (!rule.targets.includes(target.kind ?? '')) {
+        const names = rule.targets.map(id => w.kinds.find(k => k.id === id)?.label ?? id).join('、');
+        throw new DomainError(`只能归属${names}`);
+    }
+    if (!rule.multiple && belongsEdges(w, o.id).some(e => e.to_id !== target.id))
+        throw new DomainError('这条内容只能有一个归属');
+    assertNoBelongsCycle(w, o, target);
+}
+/**
+ * 每次改动对象后复查它已有的归属边。
+ * 目标已经删掉的不在这里报错——删除对象时归属边会一起打墓碑，这里只保证「类型变了也不违反声明」。
+ */
+function validateBelongs(w: Workspace, o: KnowledgeObject, kind: Kind | null | undefined) {
+    const edges = belongsEdges(w, o.id);
+    if (!edges.length)
+        return;
+    const rule = belongsRule(kind);
+    if (!rule.targets.length)
+        throw new DomainError('这个类型不能有归属');
+    if (!rule.multiple && edges.length > 1)
+        throw new DomainError('这条内容只能有一个归属');
+    for (const e of edges) {
+        const target = w.objects.find(x => x.id === e.to_id && x.user_id === w.user.id);
+        if (!target || target.deleted_at)
+            continue;
+        if (!rule.targets.includes(target.kind ?? ''))
+            throw new DomainError('类型不允许此归属');
+    }
+}
 export function getObject(w: Workspace, id: string): KnowledgeObject { const o = w.objects.find(o => o.id === id && o.user_id === w.user.id); if (!o)
     throw new DomainError('对象不存在', 404); return o; }
 function clockKey(...parts: string[]) { return JSON.stringify(parts); }
@@ -21,7 +78,7 @@ function validateObject(w: Workspace, o: KnowledgeObject, previous?: KnowledgeOb
         throw new DomainError('主体、附文或扩展属性格式无效');
     if (!Array.isArray(o.applies_to) || o.applies_to.some(x => typeof x !== 'string') || typeof o.ephemeral !== 'boolean' || !Array.isArray(o.tags_cached) || o.tags_cached.some(x => typeof x !== 'string'))
         throw new DomainError('对象数组或布尔属性无效');
-    for (const key of ['kind', 'parent_id', 'series', 'status', 'sort_key', 'supersedes_id', 'asset_id', 'source_id', 'source_ref', 'source_version'] as const)
+    for (const key of ['kind', 'series', 'status', 'sort_key', 'supersedes_id', 'asset_id', 'source_id', 'source_ref', 'source_version'] as const)
         if (o[key] !== null && typeof o[key] !== 'string')
             throw new DomainError(`${key}需要文本或null`);
     for (const key of ['captured_at', 'due_at', 'confirmed_at', 'valid_until'] as const)
@@ -41,7 +98,7 @@ function validateObject(w: Workspace, o: KnowledgeObject, previous?: KnowledgeOb
         throw new DomainError('媒体未提交或不属于当前用户');
     if (o.source_id && !w.sources.some(src => src.id === o.source_id && src.user_id === w.user.id))
         throw new DomainError('来源未注册或不属于当前用户');
-    const kind = o.kind && w.kinds.find(k => k.id === o.kind);
+    const kind = o.kind ? w.kinds.find(k => k.id === o.kind) : null;
     if (o.kind && !kind)
         throw new DomainError('未定义的类型');
     if (!['text', 'image', 'audio', 'video', 'link', 'canvas'].includes(o.form))
@@ -62,23 +119,9 @@ function validateObject(w: Workspace, o: KnowledgeObject, previous?: KnowledgeOb
         throw new DomainError('外部正文是冻结快照，请在新对象里写自己的理解');
     if (o.kind === 'self' && !o.applies_to.length)
         throw new DomainError('自我认知需要填写适用范围');
-    if (o.parent_id) {
-        const p = getObject(w, o.parent_id);
-        if (p.deleted_at)
-            throw new DomainError('归属已被删除');
-        if (!['domain', 'project'].includes(p.kind ?? ''))
-            throw new DomainError('只能归属领域或项目');
-        if (kind && kind.parent_allowed.length && !kind.parent_allowed.includes(p.kind!))
-            throw new DomainError('类型不允许此归属');
-        let id: string | null = o.parent_id;
-        const seen = new Set([o.id]);
-        while (id) {
-            if (seen.has(id))
-                throw new DomainError('归属不能形成循环');
-            seen.add(id);
-            id = getObject(w, id).parent_id;
-        }
-    }
+    // 归属不在这里校验：它是 relations 里的一条边，随 applyRelation 走 assertBelongs。
+    // 这里只复查「已经有的归属边在当前 kind 下还合不合法」。
+    validateBelongs(w, o, kind);
     if (kind)
         for (const [name, p] of Object.entries(kind.properties)) {
             const v = (o as any)[name] ?? o.extra[name];
@@ -132,7 +175,8 @@ function syncMarkup(w: Workspace, o: KnowledgeObject) {
     if (!o.body_blocks.blocks.length && o.body)
         fields.push({ field: 'body', block: '', text: o.body });
     const now = Date.now();
-    for (const r of w.relations.filter(r => r.from_id === o.id && r.source_field !== 'manual' && r.source_field !== 'canvas'))
+    // 只清理「由正文标记推导出来的引用边」。归属边和画布连线是手工建立的，正文变了也不该动。
+    for (const r of w.relations.filter(r => r.from_id === o.id && r.type === 'cite' && r.source_field !== 'manual' && r.source_field !== 'canvas'))
         r.deleted_at = now;
     for (const f of fields) {
         const m = explicitMarkup(f.text);
@@ -147,7 +191,7 @@ function syncMarkup(w: Workspace, o: KnowledgeObject) {
             if (found)
                 found.deleted_at = null;
             else
-                w.relations.push({ from_id: o.id, to_id: t.id, user_id: w.user.id, source_field: f.field, source_block_id: f.block, created_at: now, deleted_at: null });
+                w.relations.push({ from_id: o.id, to_id: t.id, user_id: w.user.id, type: 'cite', source_field: f.field, source_block_id: f.block, created_at: now, deleted_at: null });
         }
         for (const tag of m.tags) {
             const existing = w.tags.find(t => t.object_id === o.id && t.tag === tag);
@@ -235,16 +279,23 @@ function applyRelation(w: Workspace, o: KnowledgeObject, c: Change, device: stri
     const target = getObject(w, v.to_id);
     if (target.deleted_at)
         throw new DomainError('引用对象已删除');
-    if (['canvas', 'group'].includes(o.kind ?? '') || ['canvas', 'group'].includes(target.kind ?? ''))
+    const type: RelationType = v.type === 'belongs' ? 'belongs' : 'cite';
+    // 删边不用重新校验：它只会让约束更松。
+    if (type === 'belongs') {
+        if (!v.deleted_at)
+            assertBelongs(w, o, target);
+    }
+    else if (['canvas', 'group'].includes(o.kind ?? '') || ['canvas', 'group'].includes(target.kind ?? ''))
         throw new DomainError('画布和分组使用摆放关系，不进入局部图');
-    const field = v.source_field === 'canvas' ? 'canvas' : 'manual';
-    const key = clockKey(o.id, 'relation', target.id, field);
-    const current = w.relations.find(r => r.from_id === o.id && r.to_id === target.id && r.source_field === field && r.source_block_id === '');
+    // 归属边永远是手工建立的。source_field 说的是「边从哪来」，归属不可能来自正文标记。
+    const field = type === 'belongs' || v.source_field !== 'canvas' ? 'manual' : 'canvas';
+    const key = clockKey(o.id, 'relation', type, target.id, field);
+    const current = w.relations.find(r => r.from_id === o.id && r.to_id === target.id && r.type === type && r.source_field === field && r.source_block_id === '');
     if (current?.deleted_at && !v.deleted_at)
         return;
     if (current && c.base_rev !== o.rev && !v.deleted_at && !comparable({ ts: c.client_ts, device }, w.clocks[key]))
         return;
-    const r: Relation = { from_id: o.id, to_id: target.id, user_id: w.user.id, source_field: field, source_block_id: '', created_at: current?.created_at ?? Date.now(), deleted_at: v.deleted_at ?? null };
+    const r: Relation = { from_id: o.id, to_id: target.id, user_id: w.user.id, type, source_field: field, source_block_id: '', created_at: current?.created_at ?? Date.now(), deleted_at: v.deleted_at ?? null };
     if (current)
         Object.assign(current, r);
     else

@@ -1,0 +1,117 @@
+{
+  "$description": "dark 语义颜色；别名指向基础值。",
+  "color": {
+    "canvas": {
+      "$type": "color",
+      "$value": "{neutral.975}"
+    },
+    "sidebar": {
+      "$type": "color",
+      "$value": "{neutral.975}"
+    },
+    "surface": {
+      "$type": "color",
+      "$value": "{neutral.925}"
+    },
+    "raised": {
+      "$type": "color",
+      "$value": "{neutral.900}"
+    },
+    "overlay": {
+      "$type": "color",
+      "$value": "{neutral.900}"
+    },
+    "hover": {
+      "$type": "color",
+      "$value": "{neutral.850}"
+    },
+    "selected": {
+      "$type": "color",
+      "$value": "{neutral.800}"
+    },
+    "border": {
+      "$type": "color",
+      "$value": "{neutral.750}"
+    },
+    "border-subtle": {
+      "$type": "color",
+      "$value": "{neutral.800}"
+    },
+    "border-strong": {
+      "$type": "color",
+      "$value": "{neutral.500}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{neutral.50}"
+    },
+    "muted": {
+      "$type": "color",
+      "$value": "{neutral.400}"
+    },
+    "subtle": {
+      "$type": "color",
+      "$value": "{neutral.400}"
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": "{neutral.975}"
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "{neutral.100}"
+    },
+    "primary-hover": {
+      "$type": "color",
+      "$value": "{neutral.0}"
+    },
+    "focus": {
+      "$type": "color",
+      "$value": "{color.focus}"
+    },
+    "accent": {
+      "$type": "color",
+      "$value": "{color.blue}"
+    },
+    "success": {
+      "$type": "color",
+      "$value": "{color.mint}"
+    },
+    "warning": {
+      "$type": "color",
+      "$value": "{color.amber}"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "{color.red}"
+    },
+    "project": {
+      "$type": "color",
+      "$value": "{color.mint}"
+    },
+    "person": {
+      "$type": "color",
+      "$value": "{color.amber}"
+    },
+    "note": {
+      "$type": "color",
+      "$value": "{color.blue}"
+    },
+    "book": {
+      "$type": "color",
+      "$value": "{color.purple}"
+    },
+    "image": {
+      "$type": "color",
+      "$value": "{color.pink}"
+    },
+    "audio": {
+      "$type": "color",
+      "$value": "{color.pink}"
+    },
+    "tag": {
+      "$type": "color",
+      "$value": "{color.purple}"
+    }
+  }
+}

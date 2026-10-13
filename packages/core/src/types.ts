@@ -10,13 +10,20 @@ export type Property = {
     required?: boolean;
     multiple?: boolean;
 };
+/** 对象之间只有这两种边。belongs = 归属（from 归属于 to）；cite = 引用（from 引用了 to）。 */
+export type RelationType = 'belongs' | 'cite';
+/** 一种 kind 允许建立的关系。targets 为空数组表示不允许这种关系。 */
+export type RelationRule = {
+    targets: string[];
+    multiple?: boolean;
+};
 export type Kind = {
     id: string;
     label: string;
     icon: string;
     color: string;
     properties: Record<string, Property>;
-    parent_allowed: string[];
+    relations?: Record<string, RelationRule>;
     sort: number;
 };
 export type Clock = {
@@ -39,7 +46,6 @@ export interface KnowledgeObject {
     body_blocks: {
         blocks: Block[];
     };
-    parent_id: string | null;
     series: string | null;
     tags_cached: string[];
     status: string | null;
@@ -65,6 +71,7 @@ export interface Relation {
     from_id: string;
     to_id: string;
     user_id: string;
+    type: RelationType;
     source_field: string;
     source_block_id: string;
     created_at: number;

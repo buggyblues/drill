@@ -77,8 +77,12 @@ export class LocalStore {
                         o.tags_cached = [...tags];
                     }
                     else if (c.field === 'relation') {
-                        const p = { ...c.value, user_id: s.user.id, from_id: o.id, source_field: c.value.source_field ?? 'manual', source_block_id: '', created_at: Date.now(), deleted_at: c.value.deleted_at ?? null };
-                        s.relations = s.relations.filter(x => !(x.from_id === p.from_id && x.to_id === p.to_id && x.source_field === p.source_field));
+                        // 和服务端 applyRelation 的判定保持一致：type 是边的一部分，
+                        // 同一对对象之间「归属」和「引用」是两条边，不能互相覆盖。
+                        const type = c.value.type === 'belongs' ? 'belongs' : 'cite';
+                        const source_field = type === 'belongs' || c.value.source_field !== 'canvas' ? 'manual' : 'canvas';
+                        const p = { ...c.value, type, user_id: s.user.id, from_id: o.id, source_field, source_block_id: '', created_at: Date.now(), deleted_at: c.value.deleted_at ?? null };
+                        s.relations = s.relations.filter(x => !(x.from_id === p.from_id && x.to_id === p.to_id && x.type === type && x.source_field === source_field));
                         s.relations.push(p);
                     }
                     else if (c.field === 'placement') {
