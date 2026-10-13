@@ -1,0 +1,44 @@
+{
+  "name": "drill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "workspaces": [
+    "packages/core",
+    "packages/ui",
+    "packages/server",
+    "apps/web",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --experimental-strip-types packages/server/src/index.ts",
+    "demo": "node --experimental-strip-types scripts/demo.ts",
+    "start": "node --env-file-if-exists=.env --experimental-strip-types packages/server/src/index.ts",
+    "dev:web": "npm run dev -w @drill/web",
+    "build": "npm run build -w @drill/web && node scripts/build-desktop.mjs",
+    "desktop": "npm run build && electron apps/desktop",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "check": "tsc --noEmit",
+    "migrate": "node --env-file-if-exists=.env --experimental-strip-types packages/server/src/migrate.ts",
+    "build:preview": "node scripts/build-preview.mjs",
+    "package:desktop": "npm run build && npm run package -w @drill/desktop"
+  },
+  "dependencies": {
+    "pg": "^8.16.0",
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.15.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.25.0"
+  }
+}

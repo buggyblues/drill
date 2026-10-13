@@ -1,0 +1,69 @@
+# PostgreSQL + application. Storage is supplied independently (COS/S3/R2/remote MinIO/CloudBase).
+name: drill
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: drill
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      DRILL_DB_PASSWORD: ${DRILL_DB_PASSWORD:?Set DRILL_DB_PASSWORD in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/01-drill.sh:ro
+      - ../sql:/drill-sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d drill"]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+  server:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    depends_on:
+      postgres: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql://drill_app:${DRILL_DB_PASSWORD}@postgres:5432/drill
+      # Empty selectors preserve BACKEND's legacy defaults. New .env files set both explicitly.
+      BACKEND: ${BACKEND:-selfhost}
+      AUTH_MODE: ${AUTH_MODE:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+      OWNER_ID: ${OWNER_ID:-owner}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8787}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_SESSION_TOKEN: ${S3_SESSION_TOKEN:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-drill}
+      S3_PATH_STYLE: ${S3_PATH_STYLE:-true}
+      CLOUDBASE_AUTH_INTROSPECT_URL: ${CLOUDBASE_AUTH_INTROSPECT_URL:-}
+      CLOUDBASE_CLIENT_ID: ${CLOUDBASE_CLIENT_ID:-}
+      CLOUDBASE_STORAGE_BASE: ${CLOUDBASE_STORAGE_BASE:-}
+      CLOUDBASE_SERVICE_KEY: ${CLOUDBASE_SERVICE_KEY:-}
+      CLOUDBASE_BUCKET: ${CLOUDBASE_BUCKET:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      EMBEDDING_URL: ${EMBEDDING_URL:-}
+      EMBEDDING_KEY: ${EMBEDDING_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-m3}
+      EMBEDDING_DIMS: ${EMBEDDING_DIMS:-1024}
+      EMBEDDING_FALLBACKS: ${EMBEDDING_FALLBACKS:-}
+      EMBEDDING_TIMEOUT_MS: ${EMBEDDING_TIMEOUT_MS:-45000}
+    ports: ["127.0.0.1:8787:8787"]
+    restart: unless-stopped
+  embedding:
+    profiles: [semantic]
+    build: ../embedding
+    environment:
+      MODEL_ID: ${EMBEDDING_MODEL:-BAAI/bge-m3}
+      EMBEDDING_KEY: ${EMBEDDING_KEY:-}
+    volumes: ["models:/root/.cache/huggingface"]
+volumes:
+  pg-data:
+  models:

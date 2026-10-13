@@ -1,0 +1,303 @@
+
+> drill@0.1.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# (node:3547) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP：未登录拒绝数据读取，health可用
+ok 1 - HTTP：未登录拒绝数据读取，health可用
+  ---
+  duration_ms: 42.917092
+  type: 'test'
+  ...
+# Subtest: HTTP：来源检查拒绝跨站请求
+ok 2 - HTTP：来源检查拒绝跨站请求
+  ---
+  duration_ms: 13.813943
+  type: 'test'
+  ...
+# Subtest: HTTP：身份由令牌决定，读取与搜索不跨用户
+ok 3 - HTTP：身份由令牌决定，读取与搜索不跨用户
+  ---
+  duration_ms: 27.693563
+  type: 'test'
+  ...
+# Subtest: HTTP：伪造资产路径被忽略，签名固定用户命名空间
+ok 4 - HTTP：伪造资产路径被忽略，签名固定用户命名空间
+  ---
+  duration_ms: 11.193682
+  type: 'test'
+  ...
+# Subtest: HTTP：非法时间游标和原型名称被拒绝
+ok 5 - HTTP：非法时间游标和原型名称被拒绝
+  ---
+  duration_ms: 17.857445
+  type: 'test'
+  ...
+# Subtest: HTTP：最近对象分页返回captured_at排序，不包含临时对象
+ok 6 - HTTP：最近对象分页返回captured_at排序，不包含临时对象
+  ---
+  duration_ms: 21.597968
+  type: 'test'
+  ...
+# Subtest: JWT：拒绝签名篡改与过期令牌
+ok 7 - JWT：拒绝签名篡改与过期令牌
+  ---
+  duration_ms: 0.589676
+  type: 'test'
+  ...
+# Subtest: HTTP：AI未配置不生成模拟内容，原对象保持不变
+ok 8 - HTTP：AI未配置不生成模拟内容，原对象保持不变
+  ---
+  duration_ms: 10.637137
+  type: 'test'
+  ...
+# Subtest: HTTP：模型建议先落proposal，逐项接受后才写属性；洞察另建AI对象
+ok 9 - HTTP：模型建议先落proposal，逐项接受后才写属性；洞察另建AI对象
+  ---
+  duration_ms: 28.091281
+  type: 'test'
+  ...
+# Subtest: HTTP：令牌交换只在验证成功后设置HttpOnly cookie
+ok 10 - HTTP：令牌交换只在验证成功后设置HttpOnly cookie
+  ---
+  duration_ms: 6.413723
+  type: 'test'
+  ...
+# (node:3548) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:3548) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: SQLite：离线连续捕获三条，重启后队列与原始时间均保留
+ok 11 - SQLite：离线连续捕获三条，重启后队列与原始时间均保留
+  ---
+  duration_ms: 38.604526
+  type: 'test'
+  ...
+# Subtest: SQLite：断网同步失败不删除outbox
+ok 12 - SQLite：断网同步失败不删除outbox
+  ---
+  duration_ms: 4.875053
+  type: 'test'
+  ...
+# Subtest: SQLite：push成功但响应丢失，幂等重试只创建一次
+ok 13 - SQLite：push成功但响应丢失，幂等重试只创建一次
+  ---
+  duration_ms: 7.099072
+  type: 'test'
+  ...
+# Subtest: SQLite：同步失败不提前移动游标
+ok 14 - SQLite：同步失败不提前移动游标
+  ---
+  duration_ms: 4.069603
+  type: 'test'
+  ...
+# Subtest: SQLite：批次失败本地投影与outbox一起回滚
+ok 15 - SQLite：批次失败本地投影与outbox一起回滚
+  ---
+  duration_ms: 4.393359
+  type: 'test'
+  ...
+# Subtest: SQLite：FTS与中文子串搜索排除临时卡
+ok 16 - SQLite：FTS与中文子串搜索排除临时卡
+  ---
+  duration_ms: 4.110594
+  type: 'test'
+  ...
+# Subtest: SQLite：首次绑定迁移本机owner，拒绝跨后端和跨用户混库
+ok 17 - SQLite：首次绑定迁移本机owner，拒绝跨后端和跨用户混库
+  ---
+  duration_ms: 5.570837
+  type: 'test'
+  ...
+# Subtest: Chrome：同域且连续间隔小于30分钟聚合，否则分开
+ok 18 - Chrome：同域且连续间隔小于30分钟聚合，否则分开
+  ---
+  duration_ms: 1.155305
+  type: 'test'
+  ...
+# Subtest: Codex：只读可见对话，忽略工具与analysis并去除结构语法
+ok 19 - Codex：只读可见对话，忽略工具与analysis并去除结构语法
+  ---
+  duration_ms: 0.834454
+  type: 'test'
+  ...
+# Subtest: Obsidian：一文件一对象、冻结快照不被更新、重拉不重复
+ok 20 - Obsidian：一文件一对象、冻结快照不被更新、重拉不重复
+  ---
+  duration_ms: 35.342907
+  type: 'test'
+  ...
+# (node:3549) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 离线捕获时间不被接收时间覆盖
+ok 21 - 离线捕获时间不被接收时间覆盖
+  ---
+  duration_ms: 11.673993
+  type: 'test'
+  ...
+# Subtest: 幂等重试不增长版本
+ok 22 - 幂等重试不增长版本
+  ---
+  duration_ms: 0.827102
+  type: 'test'
+  ...
+# Subtest: 字段LWW冲突记录含丢失内容
+ok 23 - 字段LWW冲突记录含丢失内容
+  ---
+  duration_ms: 1.058159
+  type: 'test'
+  ...
+# Subtest: 不同设备插入不同 block id 保留并集
+ok 24 - 不同设备插入不同 block id 保留并集
+  ---
+  duration_ms: 11.417257
+  type: 'test'
+  ...
+# Subtest: 段落删除墓碑不能被旧端复活
+ok 25 - 段落删除墓碑不能被旧端复活
+  ---
+  duration_ms: 1.227273
+  type: 'test'
+  ...
+# Subtest: 对象删除墓碑优先
+ok 26 - 对象删除墓碑优先
+  ---
+  duration_ms: 0.634773
+  type: 'test'
+  ...
+# Subtest: 标签添加并集且删除墓碑优先
+ok 27 - 标签添加并集且删除墓碑优先
+  ---
+  duration_ms: 15.488463
+  type: 'test'
+  ...
+# Subtest: 画布嵌套防环及事务回滚
+ok 28 - 画布嵌套防环及事务回滚
+  ---
+  duration_ms: 1.581375
+  type: 'test'
+  ...
+# Subtest: 分组不能指向另一张画布的区域
+ok 29 - 分组不能指向另一张画布的区域
+  ---
+  duration_ms: 1.636368
+  type: 'test'
+  ...
+# Subtest: 删除画布不删除内容
+ok 30 - 删除画布不删除内容
+  ---
+  duration_ms: 1.177819
+  type: 'test'
+  ...
+# Subtest: 外部资料不能直接转沉淀
+ok 31 - 外部资料不能直接转沉淀
+  ---
+  duration_ms: 0.529896
+  type: 'test'
+  ...
+# Subtest: AI不能修改现有内容
+ok 32 - AI不能修改现有内容
+  ---
+  duration_ms: 0.360481
+  type: 'test'
+  ...
+# Subtest: 外部语法不生成引用
+ok 33 - 外部语法不生成引用
+  ---
+  duration_ms: 0.327822
+  type: 'test'
+  ...
+# Subtest: 未知链接不自动创建对象
+ok 34 - 未知链接不自动创建对象
+  ---
+  duration_ms: 0.253901
+  type: 'test'
+  ...
+# Subtest: 未知字段忽略，保留协议前向兼容
+ok 35 - 未知字段忽略，保留协议前向兼容
+  ---
+  duration_ms: 0.221954
+  type: 'test'
+  ...
+# Subtest: 连续1000次中间插入分数索引稳定
+ok 36 - 连续1000次中间插入分数索引稳定
+  ---
+  duration_ms: 9.064294
+  type: 'test'
+  ...
+# Subtest: 按用户时区计算今天
+ok 37 - 按用户时区计算今天
+  ---
+  duration_ms: 13.943512
+  type: 'test'
+  ...
+# Subtest: 用户自我认知必须有适用范围
+ok 38 - 用户自我认知必须有适用范围
+  ---
+  duration_ms: 0.361162
+  type: 'test'
+  ...
+# Subtest: 整个批次失败保持原库不变
+ok 39 - 整个批次失败保持原库不变
+  ---
+  duration_ms: 0.37263
+  type: 'test'
+  ...
+# Subtest: 新建对象丢弃未知属性，不能注入服务端列
+ok 40 - 新建对象丢弃未知属性，不能注入服务端列
+  ---
+  duration_ms: 0.187993
+  type: 'test'
+  ...
+# Subtest: 非法数组和主体类型返回业务错误，不能破坏快照
+ok 41 - 非法数组和主体类型返回业务错误，不能破坏快照
+  ---
+  duration_ms: 0.427792
+  type: 'test'
+  ...
+# Subtest: 未提交或其他用户的资产引用被拒绝
+ok 42 - 未提交或其他用户的资产引用被拒绝
+  ---
+  duration_ms: 0.255544
+  type: 'test'
+  ...
+# Subtest: 未登记的来源引用被拒绝
+ok 43 - 未登记的来源引用被拒绝
+  ---
+  duration_ms: 0.187021
+  type: 'test'
+  ...
+# Subtest: 改不同标量字段，旧base_rev不会制造虚假的覆盖冲突
+ok 44 - 改不同标量字段，旧base_rev不会制造虚假的覆盖冲突
+  ---
+  duration_ms: 0.405319
+  type: 'test'
+  ...
+# Subtest: 创建时结构化段落是正文真相源
+ok 45 - 创建时结构化段落是正文真相源
+  ---
+  duration_ms: 0.342845
+  type: 'test'
+  ...
+# Subtest: 已观察到的段落修改不被设备时钟落后误判为冲突
+ok 46 - 已观察到的段落修改不被设备时钟落后误判为冲突
+  ---
+  duration_ms: 0.297637
+  type: 'test'
+  ...
+# Subtest: 只改了其他字段时，段落观察版本仍具有因果优先级
+ok 47 - 只改了其他字段时，段落观察版本仍具有因果优先级
+  ---
+  duration_ms: 0.343906
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 424.784518

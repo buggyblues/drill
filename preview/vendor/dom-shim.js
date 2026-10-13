@@ -1,0 +1,1 @@
+export const createRoot = element => ({render: node => window.ReactDOM.render(node, element)});

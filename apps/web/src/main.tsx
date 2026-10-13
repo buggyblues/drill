@@ -1,0 +1,8 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from '../../../packages/ui/src/App.tsx';
+import '../../../packages/ui/src/styles.css';
+const root = document.getElementById('root');
+if (!root)
+    throw new Error('缺少应用挂载节点');
+createRoot(root).render(<App />);

@@ -1,0 +1,10 @@
+import {readFile} from 'node:fs/promises';
+import {DemoRepository} from '../packages/server/src/repository.ts';
+import {JWTAuth} from '../packages/server/src/auth.ts';
+import {DisabledAssets} from '../packages/server/src/assets.ts';
+import {createDrillServer} from '../packages/server/src/http.ts';
+import {seed} from '../examples/seed.ts';
+const kinds=JSON.parse(await readFile(new URL('../infra/sql/kinds.json',import.meta.url),'utf8'));
+const repo=new DemoRepository(process.env.DEMO_DATA_DIR??'.data/demo',kinds);await repo.transaction('demo',w=>({workspace:seed(w),result:true}));
+const server=createDrillServer({repo,auth:new JWTAuth('local-demonstration-only-not-for-deployment'),assets:new DisabledAssets(),demo:true,staticDir:'preview'});
+server.listen(Number(process.env.PORT??8787),'127.0.0.1',()=>console.log('Drill 示例运行在 http://127.0.0.1:'+String(process.env.PORT??8787)+' · 仅本机 · 数据保存在 .data/demo'));

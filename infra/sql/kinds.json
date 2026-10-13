@@ -1,0 +1,162 @@
+[
+  {
+    "id": "domain",
+    "label": "领域",
+    "icon": "▣",
+    "color": "#73758c",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 0
+  },
+  {
+    "id": "project",
+    "label": "项目",
+    "icon": "▤",
+    "color": "#7185a0",
+    "properties": {},
+    "parent_allowed": [
+      "domain"
+    ],
+    "sort": 1
+  },
+  {
+    "id": "canvas",
+    "label": "画布",
+    "icon": "▢",
+    "color": "#719697",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 2
+  },
+  {
+    "id": "group",
+    "label": "分组",
+    "icon": "⬚",
+    "color": "#93908d",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 3
+  },
+  {
+    "id": "action",
+    "label": "行动",
+    "icon": "◉",
+    "color": "#b18459",
+    "properties": {
+      "status": {
+        "type": "label",
+        "label": "状态",
+        "options": [
+          "todo",
+          "doing",
+          "blocked",
+          "done"
+        ]
+      },
+      "due_at": {
+        "type": "datetime",
+        "label": "截止时间"
+      }
+    },
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 4
+  },
+  {
+    "id": "artifact",
+    "label": "产物",
+    "icon": "◆",
+    "color": "#96809d",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 5
+  },
+  {
+    "id": "distill",
+    "label": "沉淀",
+    "icon": "●",
+    "color": "#719582",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 6
+  },
+  {
+    "id": "material",
+    "label": "资料",
+    "icon": "○",
+    "color": "#83909c",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 7
+  },
+  {
+    "id": "thought",
+    "label": "想法",
+    "icon": "◌",
+    "color": "#b39b64",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 8
+  },
+  {
+    "id": "self",
+    "label": "自我认知",
+    "icon": "◎",
+    "color": "#b08380",
+    "properties": {
+      "applies_to": {
+        "type": "label",
+        "label": "适用范围",
+        "options": [
+          "工具选择",
+          "学习方式",
+          "创作决策",
+          "工作节奏",
+          "生活安排"
+        ],
+        "multiple": true,
+        "required": true
+      }
+    },
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 9
+  },
+  {
+    "id": "ai_output",
+    "label": "AI生成",
+    "icon": "✳",
+    "color": "#aaa6a2",
+    "properties": {},
+    "parent_allowed": [
+      "domain",
+      "project"
+    ],
+    "sort": 10
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "check": "JSON / YAML / Python syntax only; not Docker or SQL execution",
+  "files": [
+    "package.json",
+    "tsconfig.json",
+    "tests/browser_smoke.py",
+    "apps/ios/project.yml",
+    "apps/desktop/package.json",
+    "apps/web/package.json",
+    "infra/sql/kinds.json",
+    "infra/embedding/server.py",
+    "infra/compose/compose.yml",
+    ".github/workflows/ci.yml",
+    "packages/server/package.json",
+    "packages/core/package.json",
+    "packages/ui/package.json"
+  ],
+  "errors": []
+}
