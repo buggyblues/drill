@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Icon } from './Icon.tsx';
+import React, { useState } from 'react';
+import { Button, Checkbox, Dialog, Popover, Select, TextField } from '@recap/ui';
 
 export type Choice = { value: string; label: string };
 export function GhostSelect({ label, value, options, multiple = false, disabled = false, onChange }: {
@@ -7,48 +7,28 @@ export function GhostSelect({ label, value, options, multiple = false, disabled 
     onChange: (value: any) => void;
 }) {
     const [open, setOpen] = useState(false), [query, setQuery] = useState('');
-    const root = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
-    useEffect(() => {
-        if (!open) return;
-        const outside = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
-        document.addEventListener('mousedown', outside);
-        return () => document.removeEventListener('mousedown', outside);
-    }, [open]);
-    const values = Array.isArray(value) ? value : [value];
-    return <div className="ghost-select" ref={root} onKeyDown={e => {
-        if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); trigger.current?.focus(); }
-    }}>
-        <button ref={trigger} className="ghost-value" aria-label={label} aria-expanded={open} aria-haspopup="dialog" disabled={disabled} onClick={() => { setOpen(!open); setQuery(''); }}>
-            {values.filter(Boolean).map(v => options.find(o => o.value === v)?.label ?? v).join(' · ') || '—'}
-        </button>
-        {open && <div className="property-popover" role="dialog" aria-label={label + '选项'}>
-            {options.length > 7 && <input autoFocus placeholder="筛选…" aria-label={'筛选' + label} value={query} onChange={e => setQuery(e.target.value)}/>}
-            <div className="popover-options">
-                {!multiple && <button onClick={() => { onChange(''); setOpen(false); trigger.current?.focus(); }}>—</button>}
-                {options.filter(o => o.label.includes(query)).map(o => <button key={o.value} aria-pressed={values.includes(o.value)} onClick={() => {
-                    onChange(multiple ? values.includes(o.value) ? values.filter(v => v && v !== o.value) : [...values.filter(Boolean), o.value] : o.value);
-                    if (!multiple) { setOpen(false); trigger.current?.focus(); }
-                }}><span>{o.label}</span>{values.includes(o.value) && <Icon name="check"/>}</button>)}
-            </div>
-            {multiple && <button className="popover-done" onClick={() => { setOpen(false); trigger.current?.focus(); }}>完成</button>}
-        </div>}
-    </div>;
+    const values = (Array.isArray(value) ? value : [value]).filter(Boolean);
+    if (!multiple) return <div className="ghost-select recap-property-select"><Select hideLabel label={label} value={values[0] ?? ''} disabled={disabled} onValueChange={onChange} options={[{ value: '', label: '未填写' }, ...options]}/></div>;
+    return <Popover open={open} onOpenChange={next => { setOpen(next); if (next) setQuery(''); }} label={label + '选项'}
+        trigger={<Button variant="ghost" className="ghost-value" disabled={disabled} aria-label={label}>{values.map(v => options.find(o => o.value === v)?.label ?? v).join(' · ') || '未填写'}</Button>}>
+        <div className="property-options">
+            {options.length > 7 && <TextField label={'筛选' + label} hideLabel placeholder="筛选…" value={query} onChange={e => setQuery(e.target.value)}/>}
+            <div className="property-choice-list">{options.filter(o => o.label.toLowerCase().includes(query.toLowerCase())).map(o => <Checkbox key={o.value} label={o.label} checked={values.includes(o.value)} onCheckedChange={checked => onChange(checked ? [...values, o.value] : values.filter(v => v !== o.value))}/>)}</div>
+            <Button size="sm" onClick={() => setOpen(false)}>完成</Button>
+        </div>
+    </Popover>;
 }
 
 export type DialogSpec = { title: string; description?: string; initial?: string; options?: Choice[]; confirm?: boolean; submit?: string; onSubmit: (value: string) => Promise<void> };
 export function InputDialog({ spec, onClose, onError }: { spec: DialogSpec; onClose: () => void; onError: (e: any) => void }) {
     const [value, setValue] = useState(spec.initial ?? spec.options?.[0]?.value ?? ''), [busy, setBusy] = useState(false);
-    return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
-        <section className="generic-modal input-dialog" role="dialog" aria-modal="true" aria-label={spec.title}>
-            <header><h2>{spec.title}</h2><button aria-label="关闭" disabled={busy} onClick={onClose}><Icon name="close"/></button></header>
-            <form className="modal-content connect-form" onSubmit={async e => {
-                e.preventDefault(); if (busy || (!spec.confirm && !value.trim())) return;
-                setBusy(true); try { await spec.onSubmit(value.trim()); onClose(); } catch (error) { onError(error); setBusy(false); }
-            }}>
-                {spec.description && <p>{spec.description}</p>}
-                {!spec.confirm && (spec.options ? <select autoFocus aria-label={spec.title} value={value} onChange={e => setValue(e.target.value)}>{spec.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> : <input autoFocus required aria-label={spec.title} value={value} onChange={e => setValue(e.target.value)}/>)}
-                <div className="button-row"><button className="primary" disabled={busy || (!spec.confirm && !value.trim())}>{busy ? '保存中…' : spec.submit ?? '保存'}</button><button type="button" disabled={busy} onClick={onClose}>取消</button></div>
-            </form>
-        </section>
-    </div>;
+    return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }} title={spec.title} description={spec.description ?? (spec.confirm ? '请确认此操作。' : '填写后保存到当前工作空间。')}>
+        <form className="connect-form" onSubmit={async e => {
+            e.preventDefault(); if (busy || (!spec.confirm && !value.trim())) return;
+            setBusy(true); try { await spec.onSubmit(value.trim()); onClose(); } catch (error) { onError(error); setBusy(false); }
+        }}>
+            {!spec.confirm && (spec.options ? <Select label={spec.title} value={value} options={spec.options} onValueChange={setValue}/> : <TextField autoFocus required label={spec.title} hideLabel value={value} onChange={e => setValue(e.target.value)}/>)}
+            <div className="dialog-submit-row"><Button type="button" disabled={busy} onClick={onClose}>取消</Button><Button type="submit" variant={spec.submit === '删除' ? 'danger' : 'primary'} loading={busy} disabled={!spec.confirm && !value.trim()}>{spec.submit ?? '保存'}</Button></div>
+        </form>
+    </Dialog>;
 }
