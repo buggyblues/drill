@@ -1,5 +1,3 @@
-'use client';
-import './styles/library.css';
 export * from './components/provider';
 export * from './components/icons';
 export * from './components/foundations';

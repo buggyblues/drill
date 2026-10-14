@@ -97,3 +97,7 @@ drill/
 ```
 
 **必须先阅读的边界：** [决策与未决项](docs/DECISIONS.md)、[真实验证结果](docs/TEST_REPORT.md)、[上线前验收清单](docs/ACCEPTANCE.md)。
+
+## 界面组件库
+
+Web 与 Electron 的共享界面已接入本地 `@recap/ui` 工作区包。接入范围、样式适配与验证方式见 [Recap 组件库接入](docs/Recap组件库接入.md)。

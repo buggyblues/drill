@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "desktop renders shared Recap styles",
+    "card view and persisted dark theme",
+    "project creation and multiple domain assignments persist",
+    "domain/project navigation and action board",
+    "server search opens an object with Enter",
+    "command keyboard selection and density settings",
+    "quick capture saves once, clears input, survives reload",
+    "property selector portal and Escape dismissal",
+    "existing canvas still opens",
+    "mobile navigation, object details and no horizontal overflow"
+  ],
+  "errors": [],
+  "passed": true
+}

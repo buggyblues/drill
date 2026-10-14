@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import React, { type SVGProps } from 'react';
 
 const paths = {
   plus: 'M12 5v14M5 12h14',
