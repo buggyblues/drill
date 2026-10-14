@@ -161,8 +161,9 @@ test('service: forged tenant id cannot access another user session, run or memor
   for(const path of ['/agent/sessions/'+s.id,'/agent/runs/'+r.id])await assert.rejects(f.h(path,'GET',{},'bob'));
 });
 test('service: cancellation aborts model work and prevents committed assistant output',async t=>{
-  let aborted=false;const c:Completion=async(_m,_t,signal)=>new Promise((_res,rej)=>signal.addEventListener('abort',()=>{aborted=true;rej(signal.reason);},{once:true}));
-  const f=await fixture(t,c),s=await f.session(),r=await f.h('/agent/runs','POST',{session_id:s.id,input:'long'});await sleep(25);await f.h('/agent/runs/'+r.id+'/cancel','POST',{});const final=await f.finish(r.id);assert.equal(final.status,'cancelled');assert.equal(aborted,true);assert.equal((await f.h('/agent/sessions/'+s.id)).session.messages.length,1);
+  let aborted=false,markStarted!:()=>void;const started=new Promise<void>(resolve=>{markStarted=resolve;});
+  const c:Completion=async(_m,_t,signal)=>{markStarted();return new Promise((_res,rej)=>{const onAbort=()=>{aborted=true;rej(signal.reason);};if(signal.aborted){onAbort();return;}signal.addEventListener('abort',onAbort,{once:true});});};
+  const f=await fixture(t,c),s=await f.session(),r=await f.h('/agent/runs','POST',{session_id:s.id,input:'long'});await started;await f.h('/agent/runs/'+r.id+'/cancel','POST',{});const final=await f.finish(r.id);assert.equal(final.status,'cancelled');assert.equal(aborted,true);assert.equal((await f.h('/agent/sessions/'+s.id)).session.messages.length,1);
 });
 test('service: revoking consent cancels running work',async t=>{
   const c:Completion=async(_m,_t,signal)=>new Promise((_res,rej)=>signal.addEventListener('abort',()=>rej(signal.reason),{once:true}));

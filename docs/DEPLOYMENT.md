@@ -33,6 +33,15 @@ docker compose --env-file .env -f infra/compose/compose.yml logs -f server
 
 初次数据库启动执行 `init-db.sh`，以管理账号安装扩展／表，再建立 **NOSUPERUSER / NOBYPASSRLS** 的 `drill_app` 运行角色。服务端使用该角色，而不是拿超级用户规避 RLS。修改 SQL 后，已有数据卷不会自动重新运行初始化脚本：先备份，再用管理连接执行迁移，检查新表权限。当前迁移尚未形成成熟的版本升级系统。
 
+Compose 自托管环境可在更新 SQL 文件后，通过数据库容器中的管理账号执行对应迁移。例如 Agent 表：
+
+```bash
+docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres \
+  psql -v ON_ERROR_STOP=1 --username postgres --dbname drill --file /drill-sql/006_agent.sql
+```
+
+应用容器连接数据库时使用受限的 `drill_app`，不能执行修改 RLS 策略的迁移 SQL。
+
 Compose 不向宿主暴露 PostgreSQL；HTTP 与 MinIO 端口仅绑定本机。使用 `http://localhost:8787` 与 `.env` 的 `APP_ORIGIN` 保持一致。访问 `127.0.0.1` 而配置成 `localhost` 时，浏览器 Origin 可能被拒绝，不能通过关闭来源校验解决。
 
 `S3_ENDPOINT=http://minio:9000` 是服务端 HEAD 的内部地址；`S3_PUBLIC_ENDPOINT=http://localhost:9000` 是客户端真正访问的签名地址。正式跨设备部署必须把后者改成客户端可访问的 HTTPS 存储域名，并配置精确的 CORS Origin。不要给签名 URL 做改变 Host 的普通重写。

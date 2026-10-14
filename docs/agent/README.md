@@ -72,9 +72,10 @@ DRILL_AGENT_ENGINE=harness
 
 ```bash
 docker compose --env-file .env -f infra/compose/compose.external.yml build server
-# 已存在的数据库必须执行迁移；初始化脚本不会在旧数据卷上自动重跑。
-docker compose --env-file .env -f infra/compose/compose.external.yml run --rm server \
-  node --experimental-strip-types packages/server/src/migrate.ts
+# 已存在的数据卷不会重跑初始化脚本；用 PostgreSQL 管理角色执行新增 SQL。
+# server 使用受限的 drill_app，不能修改 RLS 策略；不要用 server 容器运行 migrate.ts。
+docker compose --env-file .env -f infra/compose/compose.external.yml exec -T postgres \
+  psql -v ON_ERROR_STOP=1 --username postgres --dbname drill --file /drill-sql/006_agent.sql
 docker compose --env-file .env -f infra/compose/compose.external.yml up -d
 ```
 
