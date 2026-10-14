@@ -7,7 +7,7 @@ import { ingest } from './connectors.ts';
 let win: BrowserWindow | null = null, store: LocalStore, token = '', syncing = false;
 const root = () => app.getPath('userData'), secureFile = () => join(root(), 'credentials.bin');
 const backend = () => store.meta('backend');
-const allowed = /^\/(bootstrap|sync|search|objects|related|insight|ai|versions|conflicts|assets|settings|sources|proposals|map|walk|recognize|export)(\/|\?|$)/;
+const allowed = /^\/(agent|bootstrap|sync|search|objects|related|insight|ai|versions|conflicts|assets|settings|sources|proposals|map|walk|recognize|export)(\/|\?|$)/;
 function validateURL(value: string) { const u = new URL(value); if (u.username || u.password || u.search || u.hash)
     throw new Error('后端地址不能包含口令或查询参数'); if (u.protocol !== 'https:' && !(u.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname)))
     throw new Error('后端必须使用HTTPS，本机回环地址除外'); return u.origin; }
@@ -127,7 +127,8 @@ async function initialize() {
             return { items: o ? store.localSearch(o.title.slice(0, 3)).filter(x => x.id !== id).slice(0, 5).map(object => ({ object, score: 1 })) : [], mode: 'lexical' };
         }
         const result = await remote(path, method, body);
-        if (method !== 'GET')
+        // Agent controls/polling do not change objects. Sync only confirmed knowledge writes.
+        if (method !== 'GET' && (!url.pathname.startsWith('/agent/') || /\/(save|approve)$/.test(url.pathname)))
             await synchronize();
         return result;
     });

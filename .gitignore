@@ -4,3 +4,7 @@ node_modules/
 **/dist/
 **/.DS_Store
 apps/ios/*.xcodeproj/
+
+# Local backups/lock produced by the conservative Agent patch installer.
+.drill-patch-backups/
+.drill-agent-patch.lock

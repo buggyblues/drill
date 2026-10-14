@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Workspace, Kind } from '../../core/src/types.ts';
 import { emptyWorkspace } from '../../core/src/helpers.ts';
 import { EMBEDDING_MODEL } from './embedding.ts';
+export type ReadOptions = { privateAgent?: boolean };
 export interface Repository {
     transaction<T>(userId: string, fn: (w: Workspace) => Promise<{
         workspace: Workspace;
@@ -10,8 +11,8 @@ export interface Repository {
     }> | {
         workspace: Workspace;
         result: T;
-    }): Promise<T>;
-    read(userId: string): Promise<Workspace>;
+    }, options?: ReadOptions): Promise<T>;
+    read(userId: string, options?: ReadOptions): Promise<Workspace>;
     lexical?(userId: string, q: string): Promise<any[]>;
     vectors?(userId: string): Promise<{
         object_id: string;
@@ -58,6 +59,7 @@ const maps: Record<string, {
     keys: string[];
     json?: string[];
 }> = {
+    agent_records: { property: 'agent_records', keys: ['user_id', 'id'], json: ['data'] },
     objects: { property: 'objects', keys: ['user_id', 'id'], json: ['body_blocks', 'extra'] }, object_tags: { property: 'tags', keys: ['user_id', 'object_id', 'tag'] }, relations: { property: 'relations', keys: ['user_id', 'from_id', 'type', 'to_id', 'source_field', 'source_block_id'] }, placements: { property: 'placements', keys: ['user_id', 'canvas_id', 'object_id'] }, assets: { property: 'assets', keys: ['user_id', 'id'], json: ['provider_data'] }, sources: { property: 'sources', keys: ['user_id', 'id'], json: ['properties', 'config', 'anchor', 'state'] }, proposals: { property: 'proposals', keys: ['user_id', 'id'], json: ['ai_value', 'final_value'] }, versions: { property: 'versions', keys: ['user_id', 'object_id', 'rev'], json: ['snapshot'] }, conflicts: { property: 'conflicts', keys: ['user_id', 'id'], json: ['losing_value'] }
 };
 /**
@@ -77,14 +79,16 @@ export const bindTenant = (c: any, user: string) =>
 export class PostgresRepository implements Repository {
     pool: any;
     constructor(pool: any) { this.pool = pool; }
-    private async load(c: any, user: string): Promise<Workspace> {
+    private async load(c: any, user: string, options: ReadOptions = {}): Promise<Workspace> {
         const k = (await c.query('SELECT * FROM kinds ORDER BY sort')).rows;
         const w = emptyWorkspace(user, k);
         const u = (await c.query('SELECT * FROM users WHERE id=$1', [user])).rows[0];
         if (u)
             w.user = u;
-        for (const [table, m] of Object.entries(maps))
+        for (const [table, m] of Object.entries(maps)) {
+            if (table === 'agent_records' && !options.privateAgent) continue;
             (w as any)[m.property] = (await c.query(`SELECT * FROM ${table} WHERE user_id=$1`, [user])).rows.map((r: any) => { delete r.search_vector; return r; });
+        }
         w.changes = (await c.query('SELECT * FROM changes WHERE user_id=$1 ORDER BY seq', [user])).rows;
         w.nextSeq = w.changes.at(-1)?.seq ?? 0;
         w.clocks = Object.fromEntries((await c.query('SELECT key,value FROM field_clocks WHERE user_id=$1', [user])).rows.map((x: any) => [x.key, x.value]));
@@ -106,7 +110,7 @@ export class PostgresRepository implements Repository {
     }> | {
         workspace: Workspace;
         result: T;
-    }): Promise<T> {
+    }, options: ReadOptions = {}): Promise<T> {
         const c = await this.pool.connect();
         try {
             await c.query('BEGIN');
@@ -114,10 +118,11 @@ export class PostgresRepository implements Repository {
             // Also serializes pull with push; no transaction can advance past an uncommitted sequence.
             await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [user]);
             await c.query('INSERT INTO users(id,created_at) VALUES($1,$2) ON CONFLICT DO NOTHING', [user, Date.now()]);
-            const before = await this.load(c, user);
+            const before = await this.load(c, user, options);
             const { workspace: w, result } = await fn(structuredClone(before));
             await c.query('UPDATE users SET timezone=$2,settings=$3 WHERE id=$1', [user, w.user.timezone, JSON.stringify(w.user.settings)]);
             for (const [table, m] of Object.entries(maps)) {
+                if (table === 'agent_records' && !options.privateAgent) continue;
                 const key = (r: any) => JSON.stringify(m.keys.map(k => r[k]));
                 const old = new Map((before[m.property] as any[]).map(r => [key(r), JSON.stringify(r)]));
                 for (const row of w[m.property] as any[])
@@ -151,7 +156,7 @@ export class PostgresRepository implements Repository {
             c.release();
         }
     }
-    async read(user: string) { return this.transaction(user, w => ({ workspace: w, result: w })); }
+    async read(user: string, options: ReadOptions = {}) { return this.transaction(user, w => ({ workspace: w, result: w }), options); }
     async lexical(user: string, q: string) { const c = await this.pool.connect(); try {
         await c.query('BEGIN');
         await bindTenant(c, user);

@@ -1,3 +1,4 @@
+import { AgentService } from './agent/service.ts';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
@@ -11,6 +12,8 @@ import type { Workspace, Change, PublicSnapshot, Asset } from '../../core/src/ty
 import { aiReady, semanticReady, related, searchable, lexicalScore, modelJSON, scopeObjects, embed, cosine, clusterVectors, contentHash } from './intelligence.ts';
 import { EMBEDDING_MODEL, EMBEDDING_DIMS, embeddingReady, providers } from './embedding.ts';
 export type ServerOptions = {
+    /** Injectable for deterministic tests; production uses the real provider configuration. */
+    agent?: AgentService;
     repo: Repository;
     auth: Auth;
     assets: Assets;
@@ -40,11 +43,12 @@ catch {
 } }
 function send(res: ServerResponse, data: any, status = 200) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(data)); }
 export function createDrillServer(opts: ServerOptions) {
+    const agent = opts.agent ?? new AgentService(opts.repo);
     const limits = new Map<string, {
         start: number;
         n: number;
     }>();
-    return createServer(async (req, res) => {
+    const server = createServer(async (req, res) => {
         try {
             res.setHeader('X-Content-Type-Options', 'nosniff');
             res.setHeader('Referrer-Policy', 'no-referrer');
@@ -98,7 +102,7 @@ export function createDrillServer(opts: ServerOptions) {
             }
             if (path.startsWith('/api/'))
                 throw new DomainError('接口地址不包含/api前缀', 404);
-            const route = /^\/(bootstrap|objects|sync|search|related|insight|ai|versions|conflicts|assets|settings|sources|proposals|map|walk|recognize|export)(\/|$)/.test(path);
+            const route = /^\/(agent|bootstrap|objects|sync|search|related|insight|ai|versions|conflicts|assets|settings|sources|proposals|map|walk|recognize|export)(\/|$)/.test(path);
             if (!route) {
                 if (method !== 'GET')
                     throw new DomainError('入口不存在', 404);
@@ -121,6 +125,8 @@ export function createDrillServer(opts: ServerOptions) {
             const token = req.headers.authorization?.replace(/^Bearer /i, '') ?? req.headers.cookie?.match(/(?:^|;\s*)drill_token=([^;]+)/)?.[1] ?? '';
             const user = await opts.auth.verify(token);
             const b = method === 'POST' || method === 'PATCH' ? await jsonBody(req) : {};
+            if (path === '/agent' || path.startsWith('/agent/'))
+                return send(res, await agent.handle(user, path, method, u.searchParams, b));
             if (path === '/sync/push' && method === 'POST') {
                 if (!Array.isArray(b.changes))
                     throw new DomainError('缺少变更列表', 400);
@@ -227,6 +233,8 @@ export function createDrillServer(opts: ServerOptions) {
             }
             if (path === '/ai/distill' && method === 'POST') {
                 const w = await opts.repo.read(user), o = getObject(w, b.object_id);
+                if (!aiReady()) throw new DomainError('还未连接 AI，请在服务端配置密钥与模型。', 503);
+                if (w.user.settings.agent_consent !== true) throw new DomainError('请在 Agent 设置中确认 AI 资料使用授权。', 403);
                 const tags = [...new Set(w.tags.filter(t => !t.deleted_at).map(t => t.tag))];
                 const output = await modelJSON('提议字段，不替用户作决定。返回 {"proposals":[{"field":"kind|belongs|tags|status|applies_to","value":...}]}。只从传入类型、归属和已有标签中选择；belongs 的 value 是对象ID；外部资料不可变沉淀；模糊想法不能变行动；没有把握返回空数组。', { object: { id: o.id, title: o.title, body: o.body.slice(0, 12000), kind: o.kind }, kinds: w.kinds, parents: w.objects.filter(x => ['domain', 'project'].includes(x.kind ?? '')).map(x => ({ id: x.id, title: x.title })), existing_tags: tags });
                 const rows = Array.isArray(output.proposals) ? output.proposals : [];
@@ -237,6 +245,8 @@ export function createDrillServer(opts: ServerOptions) {
             }
             if (path === '/insight' && method === 'POST') {
                 const w = await opts.repo.read(user), items = scopeObjects(w, b.scope);
+                if (!aiReady()) throw new DomainError('还未连接 AI，请在服务端配置密钥与模型。', 503);
+                if (w.user.settings.agent_consent !== true) throw new DomainError('请在 Agent 设置中确认 AI 资料使用授权。', 403);
                 if (items.length < 2)
                     return send(res, { silent: true, text: '', citations: [] });
                 const out = await modelJSON('找出证据支持的重复、张力或盲点。不要奉承，不要为了有输出而编造。返回 {"silent":boolean,"title":string,"text":string,"citations":[对象ID]}。没有明确张力必须silent=true；输出应有一个值得思考的问题。', { objects: items.map(o => ({ id: o.id, title: o.title, body: o.body.slice(0, 3000), captured_at: o.captured_at })) });
@@ -357,4 +367,6 @@ export function createDrillServer(opts: ServerOptions) {
             send(res, { error: status === 500 ? '服务暂时未能完成请求，请查看服务端日志' : error.message }, status);
         }
     });
+    server.on('close', () => { void agent.close(); });
+    return server;
 }

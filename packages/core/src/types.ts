@@ -1,3 +1,4 @@
+import type { AgentRecord } from './agent.ts';
 export type Form = 'text' | 'image' | 'audio' | 'video' | 'link' | 'canvas';
 export type JSONValue = null | boolean | number | string | JSONValue[] | {
     [key: string]: JSONValue;
@@ -169,6 +170,8 @@ export interface Tag {
     deleted_at: number | null;
 }
 export interface Workspace {
+    /** Private server records. Never included in sync/bootstrap. */
+    agent_records?: AgentRecord[];
     user: {
         id: string;
         timezone: string;

@@ -38,6 +38,9 @@ test('HTTP：模型建议先落proposal，逐项接受后才写属性；洞察�
     process.env.AI_BASE_URL = 'http://127.0.0.1:' + (model.address() as any).port;
     process.env.AI_MODEL = 'test-provider-contract';
     t.after(() => { delete process.env.AI_BASE_URL; delete process.env.AI_MODEL; model.closeAllConnections(); model.close(); });
+    // AI now requires an explicit user data-processing consent, including legacy routes.
+    assert.equal((await req('/ai/distill', { object_id: a })).status, 403);
+    assert.equal((await req('/agent/settings', { consent: true })).status, 200);
     const proposed = await req('/ai/distill', { object_id: a });
     assert.equal(proposed.status, 200);
     assert.equal((await repo.read('alice')).objects.find(o => o.id === a)?.kind, null);

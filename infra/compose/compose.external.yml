@@ -21,6 +21,8 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
+      args:
+        DRILL_WITH_HARNESS: ${DRILL_WITH_HARNESS:-false}
     depends_on:
       postgres: {condition: service_healthy}
     environment:
@@ -49,12 +51,26 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_API_KEY: ${AI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+      DEEPSEEK_THINKING: ${DEEPSEEK_THINKING:-enabled}
+      DEEPSEEK_REASONING_EFFORT: ${DEEPSEEK_REASONING_EFFORT:-high}
+      DRILL_AGENT_ENGINE: ${DRILL_AGENT_ENGINE:-deepseek}
+      DRILL_HARNESS_MODEL: ${DRILL_HARNESS_MODEL:-deepseek-v4-flash}
+      DRILL_AGENT_MAX_TOKENS: ${DRILL_AGENT_MAX_TOKENS:-4096}
+      DRILL_AGENT_MAX_STEPS: ${DRILL_AGENT_MAX_STEPS:-10}
+      DRILL_AGENT_DAILY_RUNS: ${DRILL_AGENT_DAILY_RUNS:-30}
+      DRILL_AGENT_TIMEOUT_MS: ${DRILL_AGENT_TIMEOUT_MS:-180000}
+      DRILL_AGENT_CONTEXT_CHARS: ${DRILL_AGENT_CONTEXT_CHARS:-48000}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       EMBEDDING_URL: ${EMBEDDING_URL:-}
       EMBEDDING_KEY: ${EMBEDDING_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-m3}
       EMBEDDING_DIMS: ${EMBEDDING_DIMS:-1024}
       EMBEDDING_FALLBACKS: ${EMBEDDING_FALLBACKS:-}
       EMBEDDING_TIMEOUT_MS: ${EMBEDDING_TIMEOUT_MS:-45000}
+    stop_grace_period: 30s
     ports: ["127.0.0.1:8787:8787"]
     restart: unless-stopped
   embedding:

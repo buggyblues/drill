@@ -26,7 +26,10 @@
     "migrate": "node --env-file-if-exists=.env --experimental-strip-types packages/server/src/migrate.ts",
     "kinds": "node scripts/gen-kinds-sql.mjs",
     "build:preview": "node scripts/build-preview.mjs",
-    "package:desktop": "npm run build && npm run package -w @drill/desktop"
+    "package:desktop": "npm run build && npm run package -w @drill/desktop",
+    "test:agent": "node --experimental-strip-types --test tests/agent.test.ts",
+    "check:agent-source": "node scripts/check-agent-source.mjs",
+    "agent:install-harness": "npm install --prefix integrations/deepseek-harness --no-audit --no-fund"
   },
   "dependencies": {
     "pg": "^8.16.0",

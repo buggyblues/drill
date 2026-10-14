@@ -6,6 +6,7 @@
 @import '@fontsource/jetbrains-mono/latin-400.css';
 @import '@recap/ui/styles.css';
 @import './recap.css';
+@import './agent/agent.css';
 
 @layer drill {
 :root {
